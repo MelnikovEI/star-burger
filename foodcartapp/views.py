@@ -2,9 +2,9 @@ import json
 
 from django.http import JsonResponse
 from django.templatetags.static import static
+from phonenumber_field.phonenumber import PhoneNumber
 
-
-from .models import Product
+from .models import Product, Order, OrderElement
 
 
 def banners_list_api(request):
@@ -66,5 +66,19 @@ def register_order(request):
         return JsonResponse({
             'error': 'No data returned in order',
         })
-    print(order_data)
+
+    order = Order.objects.create(
+        first_name=order_data['firstname'],
+        last_name=order_data['lastname'],
+        phone_number=PhoneNumber.from_string(phone_number=order_data['phonenumber'], region='RU').as_e164, #order_data['phonenumber'],
+        address=order_data['address'],
+    )
+    order_elements = order_data['products']
+    for element in order_elements:
+        OrderElement.objects.create(
+            product=Product.objects.get(pk=element['product']),
+            quantity=element['quantity'],
+            order=order,
+        )
+
     return JsonResponse({})

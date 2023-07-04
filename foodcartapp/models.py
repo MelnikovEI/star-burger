@@ -127,21 +127,15 @@ class RestaurantMenuItem(models.Model):
 class Order(models.Model):
     first_name = models.CharField('Имя', max_length=50)
     last_name = models.CharField('Фамилия', max_length=50)
-    phone_number = PhoneNumberField(db_index=True)
+    phone_number = PhoneNumberField(region='RU')
     address = models.CharField('Адрес доставки', max_length=100)
-    order_element = models.ForeignKey(
-        OrderElement,
-        on_delete=models.CASCADE,
-        related_name='order',
-        verbose_name='Заказ',
-    )
 
     class Meta:
         verbose_name = 'Заказ'
         verbose_name_plural = 'Заказы'
-        # unique_together = [
-        #     ['restaurant', 'product']
-        # ]
+        indexes = [
+            models.Index(fields=['last_name', 'first_name', 'phone_number']),
+        ]
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} {self.address}"
@@ -152,14 +146,16 @@ class OrderElement(models.Model):
         Product,
         on_delete=models.CASCADE,
         related_name='order_elements',
-        verbose_name='Товар',
+        verbose_name='товар',
+    )
+    quantity = models.PositiveSmallIntegerField('Количество', validators=[MinValueValidator(1)])
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name='elements',
+        verbose_name='элемент заказа',
     )
 
-    quantity = models.PositiveSmallIntegerField('Количество')
-
     class Meta:
-        # verbose_name = 'элементы заказа'
+        verbose_name = 'элемент заказа'
         verbose_name_plural = 'элементы заказа'
-
-    def __str__(self):
-        return f"{self.first_name} {self.last_name} {self.address}"
