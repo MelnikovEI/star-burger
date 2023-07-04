@@ -1,8 +1,9 @@
 import json
-
 from django.http import JsonResponse
 from django.templatetags.static import static
 from phonenumber_field.phonenumber import PhoneNumber
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 from .models import Product, Order, OrderElement
 
@@ -59,9 +60,10 @@ def product_list_api(request):
     })
 
 
+@api_view(['POST'])
 def register_order(request):
     try:
-        order_data = json.loads(request.body.decode())
+        order_data = request.data # json.loads(request.body.decode())
     except ValueError:
         return JsonResponse({
             'error': 'No data returned in order',
@@ -80,5 +82,6 @@ def register_order(request):
             quantity=element['quantity'],
             order=order,
         )
-
-    return JsonResponse({})
+    print(order_data)
+    # return JsonResponse({})
+    return Response({})
