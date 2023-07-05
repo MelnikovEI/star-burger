@@ -125,23 +125,23 @@ class RestaurantMenuItem(models.Model):
 
 
 class Order(models.Model):
-    first_name = models.CharField('Имя', max_length=50)
-    last_name = models.CharField('Фамилия', max_length=50)
-    phone_number = PhoneNumberField(region='RU')
+    firstname = models.CharField('Имя', max_length=50)
+    lastname = models.CharField('Фамилия', max_length=50)
+    phonenumber = PhoneNumberField('Номер телефона', region='RU')
     address = models.CharField('Адрес доставки', max_length=100)
 
     class Meta:
         verbose_name = 'Заказ'
         verbose_name_plural = 'Заказы'
         indexes = [
-            models.Index(fields=['last_name', 'first_name', 'phone_number']),
+            models.Index(fields=['lastname', 'firstname', 'phonenumber']),
         ]
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} {self.address}"
+        return f"{self.firstname} {self.lastname} {self.address}"
 
 
-class OrderElement(models.Model):
+class Products(models.Model):
     product = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
@@ -152,7 +152,7 @@ class OrderElement(models.Model):
     order = models.ForeignKey(
         Order,
         on_delete=models.CASCADE,
-        related_name='elements',
+        related_name='products',
         verbose_name='элемент заказа',
     )
 

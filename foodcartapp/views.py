@@ -1,14 +1,10 @@
-import django.http
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
 from django.templatetags.static import static
-from phonenumber_field.phonenumber import PhoneNumber
-from phonenumbers import NumberParseException
-from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.serializers import ModelSerializer
 
-from .models import Product, Order, OrderElement
+from .models import Product, Order, Products
 
 
 def banners_list_api(request):
@@ -63,84 +59,36 @@ def product_list_api(request):
     })
 
 
-def is_positive_integer(val):
-    if not isinstance(val, int):
-        return False
-    elif val < 1:
-        return False
-    return True
+class ProductsSerializer(ModelSerializer):
+    class Meta:
+        model = Products
+        fields = ['product', 'quantity']
+
+
+class OrderSerializer(ModelSerializer):
+    products = ProductsSerializer(many=True, allow_empty=False)
+
+    class Meta:
+        model = Order
+        fields = ['firstname', 'lastname', 'phonenumber', 'address', 'products']
 
 
 @api_view(['POST'])
 def register_order(request):
-    try:
-        order_data = request.data  # json.loads(request.body.decode())
-    except ValueError:
-        return Response({'error': 'No data returned in order'}, status=status.HTTP_417_EXPECTATION_FAILED)
-
-    try:
-        order_elements = order_data['products']
-        first_name = order_data['firstname']
-        last_name = order_data['lastname']
-        phone_number_str = order_data['phonenumber']
-        address = order_data['address']
-    except KeyError as e:
-        return Response({'error': f'The key {e} is not specified'}, status=status.HTTP_417_EXPECTATION_FAILED)
-
-    if not order_elements:
-        return Response({'error': f"'Products' can\'t be empty"}, status=status.HTTP_417_EXPECTATION_FAILED)
-
-    try:
-        if not isinstance(order_elements, list):
-            raise TypeError('products')
-        if not isinstance(first_name, str):
-            raise TypeError('firstname')
-        if not isinstance(last_name, str):
-            raise TypeError('lastname')
-        if not isinstance(phone_number_str, str):
-            raise TypeError('phonenumber')
-        if not isinstance(address, str):
-            raise TypeError('address')
-    except TypeError as e:
-        return Response({'error': f"The key '{e}' has wrong type"},
-                        status=status.HTTP_417_EXPECTATION_FAILED)
-    try:
-        phone_number = PhoneNumber.from_string(phone_number=phone_number_str, region='RU')
-        if not phone_number.is_valid():
-            raise ValueError(phone_number_str)
-    except (NumberParseException, ValueError) as e:
-        return Response({'error': f"The phone number is incorrect: '{e}'"},
-                        status=status.HTTP_417_EXPECTATION_FAILED)
+    serializer = OrderSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
 
     order = Order.objects.create(
-        first_name=first_name,
-        last_name=last_name,
-        phone_number=phone_number,
-        address=address,
+        firstname=serializer.validated_data['firstname'],
+        lastname=serializer.validated_data['lastname'],
+        phonenumber=serializer.validated_data['phonenumber'],
+        address=serializer.validated_data['address'],
     )
-    for element in order_elements:
-        product_id = element['product']
-        if not is_positive_integer(product_id):
-            return Response(
-                {'error': f"Product_id '{product_id}' is not positive integer"},
-                status=status.HTTP_417_EXPECTATION_FAILED
-            )
-        try:
-            product = get_object_or_404(Product, pk=product_id)
-        except django.http.Http404:
-            return Response(
-                {'error': f"Product '{product_id}' doesn\'t exist"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        quantity = element['quantity']
-        if not is_positive_integer(quantity):
-            return Response(
-                {'error': f"Quantity '{quantity}' is not positive integer"},
-                status=status.HTTP_417_EXPECTATION_FAILED,
-            )
-        OrderElement.objects.create(
-            product=product,
-            quantity=quantity,
-            order=order,
-        )
-    return Response({}, status=status.HTTP_201_CREATED)
+
+    products_fields = serializer.validated_data['products']
+    products = [Products(order=order, **fields) for fields in products_fields]
+    Products.objects.bulk_create(products)
+
+    return Response({
+        'order_id': order.id,
+    })
