@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.templatetags.static import static
 from phonenumber_field.phonenumber import PhoneNumber
+from phonenumbers import NumberParseException
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -76,27 +77,46 @@ def register_order(request):
         order_data = request.data  # json.loads(request.body.decode())
     except ValueError:
         return Response({'error': 'No data returned in order'}, status=status.HTTP_417_EXPECTATION_FAILED)
-    try:
-        phone_number = order_data['phonenumber']
-    except KeyError:
-        return Response({'error': 'No phone number returned in order'}, status=status.HTTP_417_EXPECTATION_FAILED)
+
     try:
         order_elements = order_data['products']
-    except KeyError:
-        return Response({'error': 'No products list returned in order'}, status=status.HTTP_417_EXPECTATION_FAILED)
-    if not isinstance(order_elements, list):
-        return Response(
-            {'error': f"'Products' should contain a list, not a {type(order_elements).__name__}"},
-            status=status.HTTP_417_EXPECTATION_FAILED
-        )
+        first_name = order_data['firstname']
+        last_name = order_data['lastname']
+        phone_number_str = order_data['phonenumber']
+        address = order_data['address']
+    except KeyError as e:
+        return Response({'error': f'The key {e} is not specified'}, status=status.HTTP_417_EXPECTATION_FAILED)
+
     if not order_elements:
         return Response({'error': f"'Products' can\'t be empty"}, status=status.HTTP_417_EXPECTATION_FAILED)
 
+    try:
+        if not isinstance(order_elements, list):
+            raise TypeError('products')
+        if not isinstance(first_name, str):
+            raise TypeError('firstname')
+        if not isinstance(last_name, str):
+            raise TypeError('lastname')
+        if not isinstance(phone_number_str, str):
+            raise TypeError('phonenumber')
+        if not isinstance(address, str):
+            raise TypeError('address')
+    except TypeError as e:
+        return Response({'error': f"The key '{e}' has wrong type"},
+                        status=status.HTTP_417_EXPECTATION_FAILED)
+    try:
+        phone_number = PhoneNumber.from_string(phone_number=phone_number_str, region='RU')
+        if not phone_number.is_valid():
+            raise ValueError(phone_number_str)
+    except (NumberParseException, ValueError) as e:
+        return Response({'error': f"The phone number is incorrect: '{e}'"},
+                        status=status.HTTP_417_EXPECTATION_FAILED)
+
     order = Order.objects.create(
-        first_name=order_data.get('firstname', ''),
-        last_name=order_data.get('lastname', ''),
-        phone_number=PhoneNumber.from_string(phone_number=phone_number, region='RU').as_e164,
-        address=order_data.get('address', ''),
+        first_name=first_name,
+        last_name=last_name,
+        phone_number=phone_number,
+        address=address,
     )
     for element in order_elements:
         product_id = element['product']
@@ -109,10 +129,9 @@ def register_order(request):
             product = get_object_or_404(Product, pk=product_id)
         except django.http.Http404:
             return Response(
-                {'error': f"Product_id '{product_id}' doesn\'t exist in database"},
-                tatus=status.HTTP_404_NOT_FOUND
+                {'error': f"Product '{product_id}' doesn\'t exist"},
+                status=status.HTTP_404_NOT_FOUND
             )
-
         quantity = element['quantity']
         if not is_positive_integer(quantity):
             return Response(
