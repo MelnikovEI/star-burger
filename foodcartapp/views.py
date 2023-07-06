@@ -1,5 +1,6 @@
 from django.http import JsonResponse
 from django.templatetags.static import static
+from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
@@ -68,27 +69,27 @@ class ProductsSerializer(ModelSerializer):
 class OrderSerializer(ModelSerializer):
     products = ProductsSerializer(many=True, allow_empty=False)
 
+    def create(self, validated_data):
+        order = Order.objects.create(
+            firstname=validated_data['firstname'],
+            lastname=validated_data['lastname'],
+            phonenumber=validated_data['phonenumber'],
+            address=validated_data['address'],
+        )
+        products_fields = validated_data['products']
+        products = [Products(order=order, **fields) for fields in products_fields]
+        Products.objects.bulk_create(products)
+        return order
+
     class Meta:
         model = Order
-        fields = ['firstname', 'lastname', 'phonenumber', 'address', 'products']
+        fields = '__all__'
 
 
 @api_view(['POST'])
 def register_order(request):
     serializer = OrderSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-
-    order = Order.objects.create(
-        firstname=serializer.validated_data['firstname'],
-        lastname=serializer.validated_data['lastname'],
-        phonenumber=serializer.validated_data['phonenumber'],
-        address=serializer.validated_data['address'],
-    )
-
-    products_fields = serializer.validated_data['products']
-    products = [Products(order=order, **fields) for fields in products_fields]
-    Products.objects.bulk_create(products)
-
-    return Response({
-        'order_id': order.id,
-    })
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
