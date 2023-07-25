@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework import status
@@ -92,6 +93,7 @@ class OrderSerializer(ModelSerializer):
         fields = '__all__'
 
 
+@transaction.atomic
 @api_view(['POST'])
 def register_order(request):
     serializer = OrderSerializer(data=request.data)
