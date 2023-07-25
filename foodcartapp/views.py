@@ -77,7 +77,13 @@ class OrderSerializer(ModelSerializer):
             address=validated_data['address'],
         )
         products_fields = validated_data['products']
-        products = [Products(order=order, **fields) for fields in products_fields]
+        products = [
+            Products(
+                order=order,
+                fixed_price=fields['product'].price,
+                **fields
+            ) for fields in products_fields
+        ]
         Products.objects.bulk_create(products)
         return order
 

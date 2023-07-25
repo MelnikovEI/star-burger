@@ -66,7 +66,7 @@ class Product(models.Model):
         on_delete=models.SET_NULL,
     )
     price = models.DecimalField(
-        'цена',
+        'цена в каталоге',
         max_digits=8,
         decimal_places=2,
         validators=[MinValueValidator(0)]
@@ -127,7 +127,7 @@ class RestaurantMenuItem(models.Model):
 
 class OrderQuerySet(models.QuerySet):
     def order_price(self):
-        return self.annotate(order_price=Sum(F('products__quantity') * F('products__product__price')))
+        return self.annotate(order_price=Sum(F('products__quantity') * F('products__fixed_price')))
 
 
 class Order(models.Model):
@@ -163,9 +163,15 @@ class Products(models.Model):
         related_name='products',
         verbose_name='элемент заказа',
     )
+    fixed_price = models.DecimalField(
+        'Цена в момент оформления заказа',
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(0)]
+    )
 
     def price(self):
-        return self.quantity * self.product.price
+        return self.quantity * self.fixed_price
 
     class Meta:
         verbose_name = 'элемент заказа'
