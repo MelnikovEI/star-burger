@@ -92,12 +92,13 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    orders = Order.objects.order_price()
+    orders = Order.objects.exclude(status='FN').order_price()
     order_items = []
     for order in orders:
         order_items.append(
             {
                 'id': order.id,
+                'status': order.get_status_display(),
                 'order_price': order.order_price,
                 'client': f'{order.firstname} {order.lastname}',
                 'phonenumber': order.phonenumber,

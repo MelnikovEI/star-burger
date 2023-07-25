@@ -131,6 +131,17 @@ class OrderQuerySet(models.QuerySet):
 
 
 class Order(models.Model):
+    STATUS_CHOICES = [
+        ('PR', 'Обработать'),
+        ('AS', 'Собрать'),
+        ('TR', 'Доставить'),
+        ('FN', 'Выполнен'),
+    ]
+    status = models.CharField(
+        max_length=2,
+        choices=STATUS_CHOICES,
+        default='PR',
+    )
     firstname = models.CharField('Имя', max_length=50)
     lastname = models.CharField('Фамилия', max_length=50)
     phonenumber = PhoneNumberField('Номер телефона', region='RU')
@@ -142,7 +153,7 @@ class Order(models.Model):
         verbose_name = 'Заказ'
         verbose_name_plural = 'Заказы'
         indexes = [
-            models.Index(fields=['lastname', 'firstname', 'phonenumber']),
+            models.Index(fields=['lastname', 'firstname', 'phonenumber', 'status']),
         ]
 
     def __str__(self):
