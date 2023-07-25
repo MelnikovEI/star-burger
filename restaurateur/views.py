@@ -102,6 +102,7 @@ def view_orders(request):
                 'order_price': order.order_price,
                 'client': f'{order.firstname} {order.lastname}',
                 'phonenumber': order.phonenumber,
+                'comment': order.comment,
                 'address': order.address,
             }
         )
