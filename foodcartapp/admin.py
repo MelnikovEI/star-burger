@@ -1,8 +1,11 @@
 from django.contrib import admin
+from django.http import HttpResponseRedirect
 from django.shortcuts import reverse
 from django.templatetags.static import static
 from django.utils.html import format_html
+from django.utils.http import url_has_allowed_host_and_scheme
 
+from star_burger import settings
 from .models import Product, Order, Products
 from .models import ProductCategory
 from .models import Restaurant
@@ -137,3 +140,16 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [
         ProductsInline
     ]
+
+    def response_change(self, request, obj):
+        res = super(OrderAdmin, self).response_change(request, obj)
+        if "next" in request.GET:
+            redirect_to = request.GET['next']
+            url_is_safe = url_has_allowed_host_and_scheme(
+                url=redirect_to,
+                allowed_hosts=settings.ALLOWED_HOSTS,
+                require_https=request.is_secure(),
+                )
+            if url_is_safe:
+                return HttpResponseRedirect(request.GET['next'])
+        return res

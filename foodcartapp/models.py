@@ -170,9 +170,9 @@ class Products(models.Model):
         validators=[MinValueValidator(0)]
     )
 
-    def price(self):
-        return self.quantity * self.fixed_price
-
     class Meta:
         verbose_name = 'элемент заказа'
         verbose_name_plural = 'элементы заказа'
+
+    def price(self):
+        return self.quantity * self.fixed_price
