@@ -99,6 +99,7 @@ def view_orders(request):
             {
                 'id': order.id,
                 'status': order.get_status_display(),
+                'payment_method': order.get_payment_method_display(),
                 'order_price': order.order_price,
                 'client': f'{order.firstname} {order.lastname}',
                 'phonenumber': order.phonenumber,

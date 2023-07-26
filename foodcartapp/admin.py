@@ -117,8 +117,13 @@ class ProductsInline(admin.TabularInline):
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at', ]
-    fields = ('firstname', 'lastname', 'phonenumber', 'address', 'created_at',
-              ('called_at', 'delivered_at',))
+    fields = (
+        ('firstname', 'lastname'),
+        ('phonenumber', 'address'),
+        ('payment_method', 'status'),
+        'created_at',
+        ('called_at', 'delivered_at')
+    )
     list_display = [
         'firstname',
         'lastname',

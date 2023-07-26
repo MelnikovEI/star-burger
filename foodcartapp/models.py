@@ -137,11 +137,10 @@ class Order(models.Model):
         ('TR', 'Доставить'),
         ('FN', 'Выполнен'),
     ]
-    status = models.CharField(
-        max_length=2,
-        choices=STATUS_CHOICES,
-        default='PR',
-    )
+    PAYMENT_METHOD_CHOICES = [
+        ('EL', 'Электронно'),
+        ('CS', 'Наличностью'),
+    ]
     firstname = models.CharField('Имя', max_length=50)
     lastname = models.CharField('Фамилия', max_length=50)
     phonenumber = PhoneNumberField('Номер телефона', region='RU')
@@ -150,6 +149,16 @@ class Order(models.Model):
     created_at = models.DateTimeField('Заказ создан', auto_now_add=True)
     called_at = models.DateTimeField('Звонок совершён', null=True, blank=True)
     delivered_at = models.DateTimeField('Доставлен', null=True, blank=True)
+    status = models.CharField(
+        max_length=2,
+        choices=STATUS_CHOICES,
+        default='PR',
+    )
+    payment_method = models.CharField(
+        max_length=2,
+        choices=PAYMENT_METHOD_CHOICES,
+        default='CS',
+    )
 
     objects = OrderQuerySet.as_manager()
 
@@ -158,7 +167,11 @@ class Order(models.Model):
         verbose_name_plural = 'Заказы'
         indexes = [
             models.Index(
-                fields=['lastname', 'firstname', 'phonenumber', 'status', 'created_at', 'called_at', 'delivered_at']
+                fields=[
+                    'lastname', 'firstname', 'phonenumber',
+                    'status', 'created_at', 'called_at',
+                    'delivered_at', 'payment_method'
+                ]
             ),
         ]
 
