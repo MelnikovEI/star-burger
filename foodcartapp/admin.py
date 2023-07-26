@@ -116,6 +116,9 @@ class ProductsInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+    readonly_fields = ['created_at', ]
+    fields = ('firstname', 'lastname', 'phonenumber', 'address', 'created_at',
+              ('called_at', 'delivered_at',))
     list_display = [
         'firstname',
         'lastname',
@@ -128,6 +131,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = [
         'phonenumber',
         'lastname',
+        'status',
     ]
     search_fields = [
         # FIXME SQLite can not convert letter case for cyrillic words properly, so search will be buggy.

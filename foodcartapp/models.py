@@ -147,6 +147,9 @@ class Order(models.Model):
     phonenumber = PhoneNumberField('Номер телефона', region='RU')
     address = models.CharField('Адрес доставки', max_length=100)
     comment = models.TextField('Комментарий', max_length=500, blank=True)
+    created_at = models.DateTimeField('Заказ создан', auto_now_add=True)
+    called_at = models.DateTimeField('Звонок совершён', null=True, blank=True)
+    delivered_at = models.DateTimeField('Доставлен', null=True, blank=True)
 
     objects = OrderQuerySet.as_manager()
 
@@ -154,7 +157,9 @@ class Order(models.Model):
         verbose_name = 'Заказ'
         verbose_name_plural = 'Заказы'
         indexes = [
-            models.Index(fields=['lastname', 'firstname', 'phonenumber', 'status']),
+            models.Index(
+                fields=['lastname', 'firstname', 'phonenumber', 'status', 'created_at', 'called_at', 'delivered_at']
+            ),
         ]
 
     def __str__(self):
@@ -176,7 +181,7 @@ class Products(models.Model):
         verbose_name='элемент заказа',
     )
     fixed_price = models.DecimalField(
-        'Цена в момент оформления заказа',
+        'Цена',
         max_digits=8,
         decimal_places=2,
         validators=[MinValueValidator(0)]
