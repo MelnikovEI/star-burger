@@ -1,3 +1,5 @@
+from operator import itemgetter
+
 from django import forms
 from django.shortcuts import redirect, render
 from django.views import View
@@ -8,7 +10,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
 
-from foodcartapp.models import Product, Restaurant, Order
+from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem
 
 
 class Login(forms.Form):
@@ -90,11 +92,35 @@ def view_restaurants(request):
     })
 
 
+def get_ready_restaurants(order: Order):
+    need_to_cook_list = set(order.products.all().values_list('product', flat=True))
+    ready_restaurants = []
+    for restaurant in Restaurant.objects.all():
+        ready_to_cook_list = set(restaurant.menu_items.filter(availability=True).values_list('product', flat=True))
+        if need_to_cook_list <= ready_to_cook_list:
+            ready_restaurants.append(restaurant.name)
+    return ready_restaurants
+
+
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    orders = Order.objects.exclude(status='FN').order_price()
+    orders = Order.objects.exclude(status=Order.Statuses.FINISHED).order_price()
     order_items = []
     for order in orders:
+        restaurants = []
+        if order.status in (Order.Statuses.ASSEMBLY, Order.Statuses.DELIVER):
+            if order.restaurant:
+                restaurants_summary = f'Готовит: "{order.restaurant}"'
+            else:
+                restaurants_summary = 'Ресторан не назначен'
+        elif order.status == Order.Statuses.PENDING:
+            restaurants = get_ready_restaurants(order)
+            if restaurants:
+                restaurants_summary = 'Может быть приготовлен ресторанами:'
+            else:
+                restaurants_summary = 'Заказ не может быть приготовлен ни одним из ресторанов'
+        else:
+            restaurants_summary = 'Заказ выполнен или статус не определён'
         order_items.append(
             {
                 'id': order.id,
@@ -103,8 +129,12 @@ def view_orders(request):
                 'order_price': order.order_price,
                 'client': f'{order.firstname} {order.lastname}',
                 'phonenumber': order.phonenumber,
-                'comment': order.comment,
                 'address': order.address,
+                'comment': order.comment,
+                'restaurants_summary': restaurants_summary,
+                'restaurants': restaurants,
+                'status_for_sorting': order.status,
             }
         )
+        order_items.sort(key=itemgetter('status_for_sorting'))
     return render(request, template_name='order_items.html', context={'order_items': order_items})

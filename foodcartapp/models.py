@@ -131,16 +131,25 @@ class OrderQuerySet(models.QuerySet):
 
 
 class Order(models.Model):
-    STATUS_CHOICES = [
-        ('PR', 'Обработать'),
-        ('AS', 'Собрать'),
-        ('TR', 'Доставить'),
-        ('FN', 'Выполнен'),
-    ]
     PAYMENT_METHOD_CHOICES = [
         ('EL', 'Электронно'),
         ('CS', 'Наличностью'),
     ]
+    payment_method = models.CharField(
+        max_length=2,
+        choices=PAYMENT_METHOD_CHOICES,
+        default='CS',
+    )
+
+    class Statuses(models.IntegerChoices):
+        PENDING = 1, 'Обработать'
+        ASSEMBLY = 2, 'Собрать'
+        DELIVER = 3, 'Доставить'
+        FINISHED = 4, 'Выполнен'
+    status = models.IntegerField(
+        choices=Statuses.choices,
+        default=Statuses.PENDING,
+    )
     firstname = models.CharField('Имя', max_length=50)
     lastname = models.CharField('Фамилия', max_length=50)
     phonenumber = PhoneNumberField('Номер телефона', region='RU')
@@ -149,15 +158,13 @@ class Order(models.Model):
     created_at = models.DateTimeField('Заказ создан', auto_now_add=True)
     called_at = models.DateTimeField('Звонок совершён', null=True, blank=True)
     delivered_at = models.DateTimeField('Доставлен', null=True, blank=True)
-    status = models.CharField(
-        max_length=2,
-        choices=STATUS_CHOICES,
-        default='PR',
-    )
-    payment_method = models.CharField(
-        max_length=2,
-        choices=PAYMENT_METHOD_CHOICES,
-        default='CS',
+    restaurant = models.ForeignKey(
+        Restaurant,
+        verbose_name='Ресторан - исполнитель заказа',
+        related_name='orders',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
     )
 
     objects = OrderQuerySet.as_manager()

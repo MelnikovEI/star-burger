@@ -120,9 +120,10 @@ class OrderAdmin(admin.ModelAdmin):
     fields = (
         ('firstname', 'lastname'),
         ('phonenumber', 'address'),
-        ('payment_method', 'status'),
+        'payment_method',
         'created_at',
-        ('called_at', 'delivered_at')
+        ('called_at', 'delivered_at'),
+        ('restaurant', 'status'),
     )
     list_display = [
         'firstname',
@@ -160,5 +161,9 @@ class OrderAdmin(admin.ModelAdmin):
                 require_https=request.is_secure(),
                 )
             if url_is_safe:
+                if obj.restaurant:
+                    if obj.status == Order.Statuses.PENDING:
+                        obj.status = Order.Statuses.ASSEMBLY
+                        obj.save()
                 return HttpResponseRedirect(request.GET['next'])
         return res
