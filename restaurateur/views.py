@@ -1,16 +1,15 @@
 from operator import itemgetter
-
 from django import forms
+from django.db.models import Prefetch
 from django.shortcuts import redirect, render
 from django.views import View
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import user_passes_test
-
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
 
-from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem
+from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem, Products
 
 
 class Login(forms.Form):
@@ -92,30 +91,38 @@ def view_restaurants(request):
     })
 
 
-def get_ready_restaurants(order: Order):
-    need_to_cook_list = set(order.products.all().values_list('product', flat=True))
-    ready_restaurants = []
-    for restaurant in Restaurant.objects.all():
-        ready_to_cook_list = set(restaurant.menu_items.filter(availability=True).values_list('product', flat=True))
-        if need_to_cook_list <= ready_to_cook_list:
-            ready_restaurants.append(restaurant.name)
-    return ready_restaurants
-
-
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    orders = Order.objects.exclude(status=Order.Statuses.FINISHED).order_price()
+    restaurants = Restaurant.objects.prefetch_related(
+        Prefetch(
+            'menu_items',
+            queryset=RestaurantMenuItem.objects.filter(availability=True).select_related('product'),
+            to_attr="available_menu_items"
+        )
+    )
+    orders = Order.objects\
+        .exclude(status=Order.Statuses.FINISHED)\
+        .select_related('restaurant')\
+        .prefetch_related(Prefetch('products', queryset=Products.objects.select_related('product'), to_attr='menu_items'))\
+        .order_price()
+
     order_items = []
     for order in orders:
-        restaurants = []
+        ready_restaurants = []
         if order.status in (Order.Statuses.ASSEMBLY, Order.Statuses.DELIVER):
             if order.restaurant:
                 restaurants_summary = f'Готовит: "{order.restaurant}"'
             else:
                 restaurants_summary = 'Ресторан не назначен'
         elif order.status == Order.Statuses.PENDING:
-            restaurants = get_ready_restaurants(order)
-            if restaurants:
+            need_to_cook_list = set()
+            [need_to_cook_list.add(product.product_id) for product in order.menu_items]
+            for restaurant in restaurants:
+                ready_to_cook_list = set()
+                [ready_to_cook_list.add(r.product_id) for r in restaurant.available_menu_items]
+                if need_to_cook_list <= ready_to_cook_list:
+                    ready_restaurants.append(restaurant.name)
+            if ready_restaurants:
                 restaurants_summary = 'Может быть приготовлен ресторанами:'
             else:
                 restaurants_summary = 'Заказ не может быть приготовлен ни одним из ресторанов'
@@ -132,7 +139,7 @@ def view_orders(request):
                 'address': order.address,
                 'comment': order.comment,
                 'restaurants_summary': restaurants_summary,
-                'restaurants': restaurants,
+                'restaurants': ready_restaurants,
                 'status_for_sorting': order.status,
             }
         )
