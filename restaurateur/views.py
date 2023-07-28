@@ -1,4 +1,6 @@
 from operator import itemgetter
+from typing import Union
+import requests
 from django import forms
 from django.db.models import Prefetch
 from django.shortcuts import redirect, render
@@ -7,9 +9,10 @@ from django.urls import reverse_lazy
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
-
+from django.conf import settings
 
 from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem, Products
+from geopy import distance
 
 
 class Login(forms.Form):
@@ -91,6 +94,49 @@ def view_restaurants(request):
     })
 
 
+def fetch_coordinates(apikey, address):
+    base_url = "https://geocode-maps.yandex.ru/1.x"
+    response = requests.get(base_url, params={
+        "geocode": address,
+        "apikey": apikey,
+        "format": "json",
+    })
+    response.raise_for_status()
+    found_places = response.json()['response']['GeoObjectCollection']['featureMember']
+
+    if not found_places:
+        return None
+
+    most_relevant = found_places[0]
+    lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
+    return lat, lon
+
+
+def fill_coordinates(obj: Union[Order, Restaurant]):
+    if not obj.lat or not obj.lon:
+        if obj.address:
+            try:
+                coords = fetch_coordinates(settings.YANDEX_GEOCODER_API_KEY, obj.address)
+            except requests.RequestException:
+                return
+            if coords:
+                obj.lat, obj.lon = coords
+                obj.save()
+
+
+def get_distance(restaurant, order):
+    if restaurant.lat and restaurant.lon and order.lat and order.lon:
+        return round(
+            distance.distance(
+                (restaurant.lat, restaurant.lon),
+                (order.lat, order.lon)
+            ).km,
+            1
+        )
+    else:
+        return None
+
+
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
     restaurants = Restaurant.objects.prefetch_related(
@@ -100,11 +146,18 @@ def view_orders(request):
             to_attr="available_menu_items"
         )
     )
+    for restaurant in restaurants:
+        fill_coordinates(restaurant)
     orders = Order.objects\
         .exclude(status=Order.Statuses.FINISHED)\
         .select_related('restaurant')\
-        .prefetch_related(Prefetch('products', queryset=Products.objects.select_related('product'), to_attr='menu_items'))\
+        .prefetch_related(Prefetch(
+            'products',
+            queryset=Products.objects.select_related('product'),
+            to_attr='menu_items'))\
         .order_price()
+    for order in orders:
+        fill_coordinates(order)
 
     order_items = []
     for order in orders:
@@ -114,20 +167,30 @@ def view_orders(request):
                 restaurants_summary = f'Готовит: "{order.restaurant}"'
             else:
                 restaurants_summary = 'Ресторан не назначен'
+
         elif order.status == Order.Statuses.PENDING:
             need_to_cook_list = set()
             [need_to_cook_list.add(product.product_id) for product in order.menu_items]
+
             for restaurant in restaurants:
                 ready_to_cook_list = set()
                 [ready_to_cook_list.add(r.product_id) for r in restaurant.available_menu_items]
                 if need_to_cook_list <= ready_to_cook_list:
-                    ready_restaurants.append(restaurant.name)
+                    distance_to_order = get_distance(restaurant, order)
+                    ready_restaurants.append(
+                        {
+                            'name': restaurant.name,
+                            'distance': distance_to_order if distance_to_order else 9999,
+                        }
+                    )
             if ready_restaurants:
                 restaurants_summary = 'Может быть приготовлен ресторанами:'
+                ready_restaurants.sort(key=itemgetter('distance'))
             else:
                 restaurants_summary = 'Заказ не может быть приготовлен ни одним из ресторанов'
         else:
             restaurants_summary = 'Заказ выполнен или статус не определён'
+
         order_items.append(
             {
                 'id': order.id,

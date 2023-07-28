@@ -12,8 +12,9 @@ class Restaurant(models.Model):
     address = models.CharField(
         'адрес',
         max_length=100,
-        blank=True,
     )
+    lat = models.FloatField('Координаты ресторана: широта (latitude)', null=True, blank=True)
+    lon = models.FloatField('Координаты ресторана: долгота (longitude)', null=True, blank=True)
     contact_phone = models.CharField(
         'контактный телефон',
         max_length=50,
@@ -154,6 +155,8 @@ class Order(models.Model):
     lastname = models.CharField('Фамилия', max_length=50)
     phonenumber = PhoneNumberField('Номер телефона', region='RU')
     address = models.CharField('Адрес доставки', max_length=100)
+    lat = models.FloatField('Координаты доставки: широта (latitude)', null=True, blank=True)
+    lon = models.FloatField('Координаты доставки: долгота (longitude)', null=True, blank=True)
     comment = models.TextField('Комментарий', max_length=500, blank=True)
     created_at = models.DateTimeField('Заказ создан', auto_now_add=True)
     called_at = models.DateTimeField('Звонок совершён', null=True, blank=True)

@@ -4,8 +4,7 @@ from django.shortcuts import reverse
 from django.templatetags.static import static
 from django.utils.html import format_html
 from django.utils.http import url_has_allowed_host_and_scheme
-
-from star_burger import settings
+from django.conf import settings
 from .models import Product, Order, Products
 from .models import ProductCategory
 from .models import Restaurant
@@ -124,6 +123,7 @@ class OrderAdmin(admin.ModelAdmin):
         'created_at',
         ('called_at', 'delivered_at'),
         ('restaurant', 'status'),
+        ('lat', 'lon'),
     )
     list_display = [
         'firstname',
