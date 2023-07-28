@@ -1,6 +1,4 @@
 from operator import itemgetter
-from typing import Union
-import requests
 from django import forms
 from django.db.models import Prefetch
 from django.shortcuts import redirect, render
@@ -9,7 +7,6 @@ from django.urls import reverse_lazy
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
-from django.conf import settings
 
 from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem, Products
 from geopy import distance
@@ -94,36 +91,6 @@ def view_restaurants(request):
     })
 
 
-def fetch_coordinates(apikey, address):
-    base_url = "https://geocode-maps.yandex.ru/1.x"
-    response = requests.get(base_url, params={
-        "geocode": address,
-        "apikey": apikey,
-        "format": "json",
-    })
-    response.raise_for_status()
-    found_places = response.json()['response']['GeoObjectCollection']['featureMember']
-
-    if not found_places:
-        return None
-
-    most_relevant = found_places[0]
-    lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
-    return lat, lon
-
-
-def fill_coordinates(obj: Union[Order, Restaurant]):
-    if not obj.lat or not obj.lon:
-        if obj.address:
-            try:
-                coords = fetch_coordinates(settings.YANDEX_GEOCODER_API_KEY, obj.address)
-            except requests.RequestException:
-                return
-            if coords:
-                obj.lat, obj.lon = coords
-                obj.save()
-
-
 def get_distance(restaurant, order):
     if restaurant.lat and restaurant.lon and order.lat and order.lon:
         return round(
@@ -146,8 +113,6 @@ def view_orders(request):
             to_attr="available_menu_items"
         )
     )
-    for restaurant in restaurants:
-        fill_coordinates(restaurant)
     orders = Order.objects\
         .exclude(status=Order.Statuses.FINISHED)\
         .select_related('restaurant')\
@@ -156,8 +121,6 @@ def view_orders(request):
             queryset=Products.objects.select_related('product'),
             to_attr='menu_items'))\
         .order_price()
-    for order in orders:
-        fill_coordinates(order)
 
     order_items = []
     for order in orders:

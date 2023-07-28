@@ -1,7 +1,10 @@
+import requests
 from django.db import models
 from django.core.validators import MinValueValidator
-from django.db.models import F, Sum
+from django.db.models import F, Sum, signals
+from django.dispatch import receiver
 from phonenumber_field.modelfields import PhoneNumberField
+from django.conf import settings
 
 
 class Restaurant(models.Model):
@@ -216,3 +219,42 @@ class Products(models.Model):
 
     def price(self):
         return self.quantity * self.fixed_price
+
+
+def fetch_coordinates(apikey, address):
+    base_url = "https://geocode-maps.yandex.ru/1.x"
+    response = requests.get(base_url, params={
+        "geocode": address,
+        "apikey": apikey,
+        "format": "json",
+    })
+    response.raise_for_status()
+    found_places = response.json()['response']['GeoObjectCollection']['featureMember']
+
+    if not found_places:
+        return None
+
+    most_relevant = found_places[0]
+    lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
+    return lat, lon
+
+
+@receiver(signals.pre_save, sender=Restaurant)
+@receiver(signals.pre_save, sender=Order)
+def update_coords_if_address_changed(sender, instance, **kwargs):
+    try:
+        obj = sender.objects.get(pk=instance.pk)
+    except sender.DoesNotExist:  # Object is new, so field hasn't technically changed
+        old_address = ''
+    else:
+        old_address = obj.address
+
+    if not old_address == instance.address:  # Field has changed
+        if instance.address:
+            try:
+                coords = fetch_coordinates(settings.YANDEX_GEOCODER_API_KEY, instance.address)
+            except requests.RequestException:
+                return
+            if coords:
+                instance.lat, instance.lon = coords
+
