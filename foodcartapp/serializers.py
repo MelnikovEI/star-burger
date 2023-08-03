@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework.serializers import ModelSerializer
 from foodcartapp.models import Products, Order
 
@@ -11,6 +12,7 @@ class ProductsSerializer(ModelSerializer):
 class OrderSerializer(ModelSerializer):
     products = ProductsSerializer(many=True, allow_empty=False)
 
+    @transaction.atomic
     def create(self, validated_data):
         order = Order.objects.create(
             firstname=validated_data['firstname'],
