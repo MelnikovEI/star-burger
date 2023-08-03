@@ -1,7 +1,7 @@
 import requests
 from django.db import models
 from django.core.validators import MinValueValidator
-from django.db.models import F, Sum, signals
+from django.db.models import F, Sum, signals, Prefetch
 from django.dispatch import receiver
 from phonenumber_field.modelfields import PhoneNumberField
 from django.conf import settings
@@ -132,6 +132,15 @@ class RestaurantMenuItem(models.Model):
 class OrderQuerySet(models.QuerySet):
     def order_price(self):
         return self.annotate(order_price=Sum(F('products__quantity') * F('products__fixed_price')))
+
+    def prefetch_products(self):
+        return self\
+            .exclude(status=Order.Statuses.FINISHED) \
+            .select_related('restaurant') \
+            .prefetch_related(Prefetch(
+                'products',
+                queryset=Products.objects.select_related('product'),
+                to_attr='menu_items'))
 
 
 class Order(models.Model):

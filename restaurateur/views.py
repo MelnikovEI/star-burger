@@ -113,14 +113,7 @@ def view_orders(request):
             to_attr="available_menu_items"
         )
     )
-    orders = Order.objects\
-        .exclude(status=Order.Statuses.FINISHED)\
-        .select_related('restaurant')\
-        .prefetch_related(Prefetch(
-            'products',
-            queryset=Products.objects.select_related('product'),
-            to_attr='menu_items'))\
-        .order_price()
+    orders = Order.objects.prefetch_products().order_price()
 
     order_items = []
     for order in orders:
