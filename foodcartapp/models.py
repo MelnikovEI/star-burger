@@ -262,8 +262,11 @@ def update_coords_if_address_changed(sender, instance, **kwargs):
         if instance.address:
             try:
                 coords = fetch_coordinates(settings.YANDEX_GEOCODER_API_KEY, instance.address)
-            except requests.RequestException:
+            except (requests.RequestException, KeyError, AttributeError):
+                instance.lat, instance.lon = (None, None)
                 return
             if coords:
                 instance.lat, instance.lon = coords
+            else:
+                instance.lat, instance.lon = (None, None)
 
