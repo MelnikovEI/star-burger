@@ -106,6 +106,8 @@ def get_distance(restaurant, order):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
+    # a = None
+    # a.hello()  # Creating an error with an invalid line of code
     restaurants = Restaurant.objects.prefetch_related(
         Prefetch(
             'menu_items',
