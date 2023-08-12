@@ -144,7 +144,9 @@ Parcel будет следить за файлами в каталоге `bundle
 
 Настроить бэкенд: создать файл `.env` в каталоге `star_burger/` со следующими настройками:
 
-- `SECRET_KEY` — секретный ключ проекта. Он отвечает за шифрование на сайте. Например, им зашифрованы все пароли на вашем сайте.
+[//]: # (- `SECRET_KEY` — секретный ключ проекта. Он отвечает за шифрование на сайте. Например, им зашифрованы все пароли на вашем сайте.)
+- `` postgres://USER:PASSWORD@HOST:PORT/NAME
+- postgres://postgres:admin@localhost:5432/star_burger
 - `ALLOWED_HOSTS` — [см. документацию Django](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts)
 - `YANDEX_GEOCODER_API_KEY` — [ключ к API "JavaScript API and Geocoder HTTP API"](https://developer.tech.yandex.ru/)
 - `ROLLBAR_ACCESS_TOKEN` - опционально, [Rollbar](https://rollbar.com/)
