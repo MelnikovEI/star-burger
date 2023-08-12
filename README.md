@@ -53,11 +53,12 @@ python -m venv venv
 ```sh
 pip install -r requirements.txt
 ```
+Создайте базу данных [PostgreSQL](https://www.postgresql.org/)
 
 Определите переменные окружения. Создать файл `.env` в каталоге `star_burger/` и положите туда такой код:
 - `SECRET_KEY=django-insecure-0if40nf4nf93n4`
 - `YANDEX_GEOCODER_API_KEY=` — [ключ к API "JavaScript API and Geocoder HTTP API"](https://developer.tech.yandex.ru/)
-
+- `DATABASE_URL=postgres://postgres:admin@localhost:5432/star_burger`- данные для базы данных [PostgreSQL](https://www.digitalocean.com/community/tutorials/how-to-use-postgresql-with-your-django-application-on-ubuntu-20-04) в формате `postgres://USER:PASSWORD@HOST:PORT/NAME`
 
 Создайте файл базы данных SQLite и отмигрируйте её следующей командой:
 
@@ -145,8 +146,7 @@ Parcel будет следить за файлами в каталоге `bundle
 Настроить бэкенд: создать файл `.env` в каталоге `star_burger/` со следующими настройками:
 
 [//]: # (- `SECRET_KEY` — секретный ключ проекта. Он отвечает за шифрование на сайте. Например, им зашифрованы все пароли на вашем сайте.)
-- `` postgres://USER:PASSWORD@HOST:PORT/NAME
-- postgres://postgres:admin@localhost:5432/star_burger
+- `DATABASE_URL=postgres://postgres:admin@localhost:5432/star_burger`- данные для базы данных [PostgreSQL](https://www.digitalocean.com/community/tutorials/how-to-use-postgresql-with-your-django-application-on-ubuntu-20-04) в формате `postgres://USER:PASSWORD@HOST:PORT/NAME`
 - `ALLOWED_HOSTS` — [см. документацию Django](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts)
 - `YANDEX_GEOCODER_API_KEY` — [ключ к API "JavaScript API and Geocoder HTTP API"](https://developer.tech.yandex.ru/)
 - `ROLLBAR_ACCESS_TOKEN` - опционально, [Rollbar](https://rollbar.com/)
