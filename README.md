@@ -135,24 +135,28 @@ Parcel будет следить за файлами в каталоге `bundle
 **Сбросьте кэш браузера <kbd>Ctrl-F5</kbd>.** Браузер при любой возможности старается кэшировать файлы статики: CSS, картинки и js-код. Порой это приводит к странному поведению сайта, когда код уже давно изменился, но браузер этого не замечает и продолжает использовать старую закэшированную версию. В норме Parcel решает эту проблему самостоятельно. Он следит за пересборкой фронтенда и предупреждает JS-код в браузере о необходимости подтянуть свежий код. Но если вдруг что-то у вас идёт не так, то начните ремонт со сброса браузерного кэша, жмите <kbd>Ctrl-F5</kbd>.
 
 
-## Как запустить prod-версию сайта
-
-Собрать фронтенд:
-
-```sh
-./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
-```
-
+## Как обновить и запустить prod-версию сайта
 Настроить бэкенд: создать файл `.env` в каталоге `star_burger/` со следующими настройками:
-
-[//]: # (- `SECRET_KEY` — секретный ключ проекта. Он отвечает за шифрование на сайте. Например, им зашифрованы все пароли на вашем сайте.)
 - `DATABASE_URL=postgres://postgres:admin@localhost:5432/star_burger`- данные для базы данных [PostgreSQL](https://www.digitalocean.com/community/tutorials/how-to-use-postgresql-with-your-django-application-on-ubuntu-20-04) в формате `postgres://USER:PASSWORD@HOST:PORT/NAME`
-- `ALLOWED_HOSTS` — [см. документацию Django](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts)
+- `ALLOWED_HOSTS=194.87.93.201,194.87.93.201.nip.io` — перечень допустимых хостов/доменов, на которых разрешена работа данного сайта [см. документацию Django](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts)
 - `YANDEX_GEOCODER_API_KEY` — [ключ к API "JavaScript API and Geocoder HTTP API"](https://developer.tech.yandex.ru/)
 - `ROLLBAR_ACCESS_TOKEN` - опционально, [Rollbar](https://rollbar.com/)
 - `ROLLBAR_ENVIRONMENT` - опционально, наименование инсталляции для разделения источника в системе Rollbar, например 'development', 'production'.
 - `DEBUG` — опционально, дебаг-режим, True или False.
-- ## Цели проекта
+
+Перейти в папку проекта:
+```sh
+cd ../opt/star-burger/
+```
+
+Запустить скрипт для обновления кода и перезапуска сервисов:
+```sh
+./deploy_star_burger.sh
+```
+Скрипт сообщит об успешном обновлении или возникших проблемах. 
+
+
+## Цели проекта
 
 Код написан в учебных целях — это урок в курсе по Python и веб-разработке на сайте [Devman](https://dvmn.org). За основу был взят код проекта [FoodCart](https://github.com/Saibharath79/FoodCart).
 
