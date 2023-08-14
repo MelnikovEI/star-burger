@@ -12,7 +12,7 @@ echo  2/$steps: Библиотеки python установлены
 npm ci --dev
 echo  3/$steps: Библиотеки Node.js установлены
 
-./node_modules/.bin/parcel watch bundles-src/index.js --dist-dir bundles --public-url="./"
+./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
 echo  4/$steps: Сборка JS завершена
 
 ./venv/bin/python3 manage.py collectstatic --noinput
