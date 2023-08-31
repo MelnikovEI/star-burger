@@ -7,7 +7,6 @@ env = Env()
 env.read_env()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 YANDEX_GEOCODER_API_KEY = env('YANDEX_GEOCODER_API_KEY')
 SECRET_KEY = env('SECRET_KEY')
@@ -78,9 +77,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'star_burger.wsgi.application'
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-MEDIA_URL = '/media/'
-
 DATABASES = {
     'old_db': dj_database_url.config(
         default='sqlite:////{0}'.format(os.path.join(BASE_DIR, 'db.sqlite3'))
@@ -117,13 +113,15 @@ USE_L10N = True
 
 USE_TZ = True
 
-STATIC_URL = '/static/'
-
 INTERNAL_IPS = [
     '127.0.0.1'
 ]
 
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'mediafiles')
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "assets"),
@@ -136,3 +134,5 @@ ROLLBAR = {
     'code_version': '1.0',
     'root': BASE_DIR,
 }
+
+CSRF_TRUSTED_ORIGINS = ["http://194.87.93.201:1337"]
