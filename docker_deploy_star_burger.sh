@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-steps=8
+steps=6
 
 echo ---Обновление кода---
 git pull
@@ -11,41 +11,21 @@ echo ---Сборка frontend---
 ./node/node_build.sh
 echo  2/$steps: Сборка frontend завершена
 
-echo ---Установка библиотек node.js---
-npm ci --dev
-echo  3/$steps: Библиотеки Node.js установлены
+echo ---Cборка образов---
+docker-compose -f docker-compose.prod.yml build
+echo  3/$steps: Образы созданы
 
-echo ---Сборка JS---
-./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
-echo  4/$steps: Сборка JS завершена
-
-echo ---Сборка статики django---
-./venv/bin/python3 manage.py collectstatic --noinput
-echo  5/$steps: Статика пересобрана
+echo ---Запуск контейнеров---
+docker-compose -f docker-compose.prod.yml up -d
+echo  4/$steps: Контейнеры запущены
 
 echo ---Миграции БД---
-./venv/bin/python3 manage.py migrate --noinput
-echo  6/$steps: Миграции БД завершены
+docker-compose -f docker-compose.prod.yml exec web python manage.py migrate --noinput
+echo  5/$steps: Миграции БД завершены
 
-echo ---Перезапуск службы сайта---
-systemctl restart star-burger.service
-echo  7/$steps: Служба сайта перезапущена
+echo ---Сборка статики django---
+docker-compose -f docker-compose.prod.yml exec web python manage.py collectstatic --no-input --clear
+echo  6/$steps: Статика пересобрана
 
-echo ---Перезапуск сервера---
-systemctl reload nginx.service
-echo  8/$steps: Сервер перезапущен
-echo  Успех, сайт обновлён!
-
-
-echo ---Регистрация deploy в сервисе Rollbar---
-commit_hash=$(git rev-parse HEAD)
-source .env
-export ROLLBAR_ACCESS_TOKEN
-
-curl --http1.1 -X POST \
-  https://api.rollbar.com/api/1/deploy \
-  -H "X-Rollbar-Access-Token: $ROLLBAR_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"environment": "production", "revision": "'"$commit_hash"'", "local_username": "'"$USER"'", "comment": "Deployed new version", "status": "succeeded"}'
 
 echo ---Завершено---
