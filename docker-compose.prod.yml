@@ -3,7 +3,7 @@ version: '3.3'
 services:
   web:
     build:
-      context: ./star-burger
+      context: .
       dockerfile: Dockerfile.prod
     command: gunicorn star_burger.wsgi:application --bind 0.0.0.0:8000
     volumes:
