@@ -7,9 +7,9 @@ echo ---Обновление кода---
 git pull
 echo  1/$steps: Код обновлён
 
-echo ---Установка библиотек python---
-./venv/bin/pip3 install -r requirements.txt
-echo  2/$steps: Библиотеки python установлены
+echo ---Сборка frontend---
+./node/node_build.sh
+echo  2/$steps: Сборка frontend завершена
 
 echo ---Установка библиотек node.js---
 npm ci --dev
