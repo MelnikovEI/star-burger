@@ -1,9 +1,8 @@
-# [Сайт доставки еды Star Burger](https://194.87.93.201.nip.io)
+# [Сайт доставки еды Star Burger](http://194.87.93.201:1337)
 
 Это сайт сети ресторанов Star Burger. Здесь можно заказать превосходные бургеры с доставкой на дом.
 
 ![скриншот сайта](https://dvmn.org/filer/canonical/1594651635/686/)
-
 
 Сеть Star Burger объединяет несколько ресторанов, действующих под единой франшизой. У всех ресторанов одинаковое меню и одинаковые цены. Просто выберите блюдо из меню на сайте и укажите место доставки. Мы сами найдём ближайший к вам ресторан, всё приготовим и привезём.
 
@@ -48,7 +47,6 @@ python -m venv venv
 - Windows: `.\venv\Scripts\activate`
 - MacOS/Linux: `source venv/bin/activate`
 
-
 Установите зависимости в виртуальное окружение:
 ```sh
 pip install -r requirements.txt
@@ -60,7 +58,7 @@ pip install -r requirements.txt
 - `YANDEX_GEOCODER_API_KEY=` — [ключ к API "JavaScript API and Geocoder HTTP API"](https://developer.tech.yandex.ru/)
 - `DATABASE_URL=postgres://postgres:admin@localhost:5432/star_burger`- данные для базы данных [PostgreSQL](https://www.digitalocean.com/community/tutorials/how-to-use-postgresql-with-your-django-application-on-ubuntu-20-04) в формате `postgres://USER:PASSWORD@HOST:PORT/NAME`
 
-Создайте файл базы данных SQLite и отмигрируйте её следующей командой:
+Создайте файл базы данных и отмигрируйте её следующей командой:
 
 ```sh
 python manage.py migrate
@@ -136,13 +134,23 @@ Parcel будет следить за файлами в каталоге `bundle
 
 
 ## Как обновить и запустить prod-версию сайта
-Настроить бэкенд: создать файл `.env` в каталоге `star_burger/` со следующими настройками:
-- `DATABASE_URL=postgres://postgres:admin@localhost:5432/star_burger`- данные для базы данных [PostgreSQL](https://www.digitalocean.com/community/tutorials/how-to-use-postgresql-with-your-django-application-on-ubuntu-20-04) в формате `postgres://USER:PASSWORD@HOST:PORT/NAME`
-- `ALLOWED_HOSTS=194.87.93.201,194.87.93.201.nip.io` — перечень допустимых хостов/доменов, на которых разрешена работа данного сайта [см. документацию Django](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts)
+Настроить бэкенд: создать файл `.env.prod` в каталоге `star_burger/` со следующими настройками:
+
+- `SECRET_KEY=change_me` - секретный ключ проекта django
+- `DATABASE_URL=postgres://star_burger:star_burger@db:5432/star_burger_prod`- данные для базы данных [PostgreSQL](https://www.digitalocean.com/community/tutorials/how-to-use-postgresql-with-your-django-application-on-ubuntu-20-04) в формате `postgres://USER:PASSWORD@HOST:PORT/NAME`
+- `ALLOWED_HOSTS=localhost,127.0.0.1,[::1],194.87.93.201,194.87.93.201.nip.io` — перечень допустимых хостов/доменов, на которых разрешена работа данного сайта [см. документацию Django](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts)
 - `YANDEX_GEOCODER_API_KEY` — [ключ к API "JavaScript API and Geocoder HTTP API"](https://developer.tech.yandex.ru/)
 - `ROLLBAR_ACCESS_TOKEN` - опционально, [Rollbar](https://rollbar.com/)
 - `ROLLBAR_ENVIRONMENT` - опционально, наименование инсталляции для разделения источника в системе Rollbar, например 'development', 'production'.
 - `DEBUG` — опционально, дебаг-режим, True или False.
+- `SQL_HOST=db`,
+- `SQL_PORT=5432`,
+- `DATABASE=postgres` - данные для сборки образа базы данных
+
+Создать файл `.env.prod.db` в каталоге `star_burger/` со следующими настройками для создания БД:
+- `POSTGRES_USER=star_burger`
+- `POSTGRES_PASSWORD=star_burger`
+- `POSTGRES_DB=star_burger_prod`
 
 Перейти в папку проекта:
 ```sh
@@ -151,10 +159,16 @@ cd ../opt/star-burger/
 
 Запустить скрипт для обновления кода и перезапуска сервисов:
 ```sh
-./deploy_star_burger.sh
+./docker_deploy_star_burger.sh
 ```
 Скрипт сообщит об успешном обновлении или возникших проблемах. 
 
+Если сборка происходит с нуля, то для доступа к admin части сайта создать профиль администратора:
+```sh
+docker-compose -f docker-compose.prod.yml exec web python manage.py createsuperuser
+```
+
+Сайт будет доступен по адресу `Ваш_IP:1337/`
 
 ## Цели проекта
 
@@ -162,4 +176,4 @@ cd ../opt/star-burger/
 
 Где используется репозиторий:
 
-- Второй и третий урок [учебного курса Django](https://dvmn.org/modules/django/)
+- Урок [учебного курса Django](https://dvmn.org/modules/docker-v2/lesson/dockerize-django/)
